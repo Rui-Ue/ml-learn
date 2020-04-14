@@ -87,3 +87,35 @@ scikit-learnをメインにした本で，実装が網羅的に乗ってる．�
 <br>
 
 # NN系(ディープラーニング含む)
+
+
+## [ゼロから作るDeepLearning](https://www.oreilly.co.jp/books/9784873117584/)
+
+これは決定．手元にあるしpdfでも買える．この本を軸に進めて，理論的に気になった詳細は他で埋める．
+
+
+## [深層学習](https://www.kspub.co.jp/book/detail/1529021.html)
+
+研究室の借りて家にある．理論がまとまってる．辞書的に使えば良いかも．
+
+
+## DNNライブラリについて
+
+[これ](https://www.atmarkit.co.jp/ait/articles/1910/31/news028.html)によると，産業界では TensorFlow が人気で，学術界では PyTorch が人気．
+
+とりあえず集中講義でやったレベルの Pytorch までは身につけときたい．書籍というか web でドキュメントや記事読むのが良いのかも．
+
+
+
+<br>
+
+# その他
+
+## [Python実践データ分析100本ノック](https://www.shuwasystem.co.jp/book/b497338.html)
+
+相当リアルなので良さそう．Pandas レベルなので既に知ってるものが多いかもしれないけど．
+
+
+## [MLPシリーズ](https://www.kspub.co.jp/book/series/S043.html)
+
+これっていう研究課題が決まった後に読むと良いかも．理論系はもちろん，様々な応用分野(画像認識,音声認識,自然言語,Webデータ)別の書籍が出ている．

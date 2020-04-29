@@ -312,7 +312,7 @@ $$
 誤判別のコストを考慮した決定規則(決定領域)を決めることができる．
 
 <br>
-
+<br>
 
 
 ## 1.5.3. The reject option
@@ -336,40 +336,308 @@ $$
 
 というのも自明．図1.26 がわかりやすい．
 
+
+
+<br>
 <br>
 
 ## 1.5.4. Inference and decision
 
 <br>
 
-> we can identify three distinct approaches to solving decision problems, all of which have been used in practical applications.  (P43)
+> [p43] we can identify three distinct approaches to solving decision problems, all of which have been used in practical applications.
+
+
+
+<br>
 
 ### 生成モデル (generative model)
 
-入力(説明変数)とクラスの同時分布 $p(\bm{x}, C)$ のモデルを作って，それをデータから推定する．そこから事後予測分布(クラス事後確率) $p(C | \bm{x})$ を導出し，あとは決定理論の枠組みを使って状況に応じた意思決定(判別や棄却オプション)をすることができる．周辺化すれば $p(\bm{x})$ も求まるので，予測の際に(外れ値)が入力されたら「外挿っぽい！」と注意を出せる．
+入力(説明変数)とクラスの同時分布 $p(\bm{x}, C)$ のモデルを作って，それをデータから推定する．そこから事後予測分布(クラス事後確率) $p(C | \bm{x})$ を導出して利用する．
+
+決定理論をフル活用して状況に応じた意思決定(判別や棄却オプション)をすることができる．周辺化すれば $p(\bm{x})$ も求まる (もしくはクラス構成比率から直接推定できている) ので，予測の際に(外れ値)が入力されたら「外挿っぽい！」と注意を出せる．
+
+現象全体をモデリングするイメージ．作ったモデルから $\bm{x}, C$ を**生成**してシミュレーションを行うことができる．
+
+- ナイーブベイズ ( 8.2.2 節で詳しく)
+
+
+
+<br>
 
 ### 識別モデル (discriminative model)
 
 入力(説明変数) $\bm{x}$ の分布は考えず，事後予測分布(クラス事後確率) $p(C | \bm{x})$ を直接モデル化してデータから推定する．
-あとは生成モデル同様に決定理論の枠組みを使って状況に応じた分類を行うことができる．同時分布までは考えない分，生成モデルよりは少ないサンプルサイズで済む．
+
+決定理論を使って状況に応じた分類を行うことができる (生成モデルほど柔軟なことはできないが)．同時分布までは考えないので生成モデルよりは少ないサンプルサイズで済む．目的によっては識別モデルの方がコスパが高い場合もある．
+
+- ロジスティック判別モデル
+- 出力層の活性化関数としてソフトマックス関数を使ったニューラルネットワーク
+
+
+
+<br>
 
 ### 識別関数 (discriminant function)
 
-そもそも確率や分布なんて考えない．$C = f(\bm{x})$ のように入力 $\bm{x}$ から直接クラスラベル $C$ を 決定(予測)するような関数 $f$ をデータから推定して，それを使って分類をおこなう．確率分布って何？って人でも問題なく使える．（だが確率を使わないので決定理論を適用できない！）
+そもそも確率や分布なんて考えない．$C = f(\bm{x})$ のように入力 $\bm{x}$ から直接クラスラベル $C$ を 決定(予測)するような関数 $f$ をデータから推定して，それを使って分類をおこなう．
 
-↓
+必要とされる数理(統計)の知識は生成モデルとかに比べて少ないが，確率を使わないので決定理論を適用できない．イメージ的には，とにかくより良い決定領域を作ろうとするアプローチ．
 
-この3つの例としては...
-
-- 生成モデル
-  - ナイーブベイズ ( 8.2.2 節で詳しく)
-- 識別モデル
-  - ロジスティック判別
-  - 出力層にソフトマックス関数を使ったニューラルネットワーク
-- 識別関数
-  - SVM
-  - ランダムフォレスト
-  - フィッシャー線形判別
+- SVM
+- ランダムフォレスト
+- フィッシャー線形判別 (クラス分布にガウスを仮定してマハラノビス距離使って，などとしっかり想定すれば生成モデルになる)
 
 <br>
+
+
+### Combining models
+
+> [p45] For example, in our hypothetical medical diagnosis problem, we may have information available from, say, blood tests as well as X-ray im- ages. Rather than combine all of this heterogeneous information into one huge input space, it may be more effective to build one system to interpret the X- ray images and a different one to interpret the blood data. As long as each of the two models gives posterior probabilities for the classes, we can combine the outputs systematically using the rules of probability.
+
+生成モデルの現実的なメリット．
+
+X線画像データと血液データの両方を使ったモデルを作りたい場合，両者を同じ DB に保存したり同時にメモリに乗せて学習を回したりしようとすると，システムが複雑になるしリソースもかかる．
+
+ここで生成モデルのアプローチを使うと「X線画像データだけを使った生成モデル$P(C | \bm{x}_I)$」と「血液データだけを使ったモデル$P(C | \bm{x}_B)$」を別々で作ったあと，両者を自然にアンサンブルできる．
+具体的には，(1.84)の条件付き独立性を認めれば，
+
+$$
+\begin{aligned}
+P(C | \bm{x}_I, \bm{x}_B)
+&\propto P(\bm{x}_I, \bm{x}_B | C) ~ P(C) \\
+&=  P(\bm{x}_I | C) ~ P(\bm{x}_B | C) ~ P(C) \\
+&= \frac{P(C | \bm{x}_I) ~ P(\bm{x}_I)}{P(C)} ~ \frac{P(C | \bm{x}_B) ~ P(\bm{x}_B)}{P(C)}  P(C) \\
+&\propto \frac{P(C | \bm{x}_I) ~ P(C | \bm{x}_B)}{P(C)}
+\end{aligned}
+$$
+
+のように $P(C | \bm{x}_I, \bm{x}_B)$ を構成できる．
+
+
+<br>
+<br>
+
+## 1.5.5. Loss functions for regression
+
+<br>
+
+流れとしては，
+
+1. 回帰タスクでアウトカム事後予測分布 $P(t | \bm{x})$ がモデル化して求まっているとして，予測値としてどういう $t$ 値を選ぶのが良いのだろうか．
+2. 直感的には，条件付き期待値 $E_t[t | \bm{x}]$ (つまり $P(t | \bm{x})$ の期待値) を予測値として選べば良さそう．
+3. この決定規則の妥当性は「期待二乗誤差の最小化」の観点から保証される．
+
+という感じで，これは 1.5.1 の分類タスクでの
+
+> 1. 分類タスクでクラス事後予測分布 $P(C | \bm{x})$ がモデル化して求まっているとして，どのクラスに分類するのが良いだろうか．
+> 2. 直感的には，$P(C | \bm{x})$ を最大にするクラス $C$ に分類すれば良さそう．
+> 3. その決定規則の妥当性は「誤分類確率の最小化」の観点から保証される．
+
+と全く同じ構成の話．
+
+<br>
+
+> [p47] we can identify three distinct approaches to solving regression problems given, in order of decreasing complexity, by:
+
+分類モデルと同様に，回帰モデルも次の３つに分類できる．
+
+<br>
+
+### (a) 生成モデル (generative model)
+
+入力 $\bm{x}$ とアウトカム $t$ の同時分布 $P(\bm{x}, t)$ をどうにかしてモデル化してパラメータ推定して，そこから $P(t | x)$ を求める．さらに期待値とって条件付き期待値 $E[t | \bm{x}]$ を得てそれを予測値とする．
+
+シミュレーションでデータを無限に生成できるようになるし，幅広い意思決定を支援できる．棄却オプションとか外れ値アラートとか．その分データや計算リソース，数学スキルが必要．
+
+- (こんな手法は現実的じゃなさそうだが) $P(\bm{x}, t)$ をカーネル密度推定してゲットしてそれを使う．
+
+<br>
+
+### (b) 識別モデル (discriminative model)
+
+条件付き分布 $P(t | x)$ を直接モデル化して推定して，そこから条件付き期待値 $E[t | \bm{x}]$ を得て，それを予測値とする．
+
+シミュレーションでデータ生成したり外れ値チェックしたりする必要がなければ，$P(t | x)$ だけモデル化する識別モデルのがコスパ良い．
+
+- 等分散ガウスノイズを仮定した線形回帰モデル (説明変数側の分布も考えていたら生成モデル)
+
+<br>
+
+### (c) 識別関数 (discriminant function)
+
+そもそも確率や分布なんて考えず $t = y(\bm{x})$ のように入力 $\bm{x}$ から直接アウトカム値 $t$ を 決定(予測)するような関数 $y$ をデータから推定して，それを使って予測をおこなう．
+
+必要な数理的知識は少ないが，確率を使わないので決定理論をによる意思決定はできない．
+
+- ニューラルネットワーク (頑張って分布考えた場合を除く)
+- GBDT(勾配ブースティング決定木)
+  - XGBoost
+  - LightGBM
+
+
+
+
+<br>
+<br>
+<br>
+
+# 1.6. Information Theory
+
+<br>
+
+> [p48] The amount of information can be viewed as the ‘degree of surprise’ on learning the value of x. If we are told that a highly improbable event has just occurred, we will have received more information than if we were told that some very likely event has just occurred, and if we knew that the event was certain to happen we would receive no information.
+
+この「珍しい値(事象)が観測された時より多くの情報量が得られる」という思想を基にして話が展開される．例えば「今日は晴れた」より「今日は雪が降った」の方が情報量多い，という思想．
+
+後で出てくるが，情報量を「符号化する時に割り当てるべきビット数(符号長)」と捉えるのもわかりやすい．
+
+<br>
+
+「情報量」の定義として対数を使った $h(x) = - \log p(x)$ が採用されたのは，
+
+- 情報量は非負値であるべき
+- 情報量は観測される確率の単調減少関数であるべき
+- 独立な事象が起きた際に得られる情報量は，それぞれの事象の情報量の単純な和になるべき
+
+といった要件を満たすため．
+
+<br>
+
+> [p49] This important quantity is called the entropy of the random variable x.
+
+(1.92) の情報量 $h(x) = - \log p(x)$ は事象(確率変数の観測値)に対して定義されているもので，(1.93) のエントロピー $H[x] = - \sum_x p(x) \log p(x)$ は確率変数に対して定義されている．「確率変数 $x$ の値が観測された時に得られる情報量の期待値」という意味．
+
+
+
+<br>
+
+> [p50] The noiseless coding theorem (Shannon, 1948) states that the entropy is a lower bound on the number of bits needed to transmit the state of a random variable.
+
+これをエントロピーの解釈の１つとして捉えるのも良い．「なるべく効率的に符号化した時に必要となる平均符号長」という感じ．
+
+> [p51] Distributions $p(x_i)$ that are sharply peaked around a few values will have a relatively low entropy, whereas those that are spread more evenly across many values will have higher entropy, as illustrated in Figure 1.30.
+
+これもエントロピーの解釈として分かりやすい．例えば「誕生月」よりも「誕生日」の方がエントロピー(観測された時に得られる平均的な情報量)が大きい，となる．直感的．また「離散型確率変数において，とりうる値が固定されていれば，エントロピー最大となるのは一様分布」という結果も出ていて，自然．
+
+<br>
+
+> [p52] We can extend the definition of entropy to include distributions $p(x)$ over continuous variables $x$ as follows. 
+
+ここ以降の流れをまとめる．
+
+1. 離散型確率変数に定義したエントロピー (1.93) を連続型確率変数にも拡張したい
+2. 和を量子化して積分に持っていこうとすると (1.103) の右辺第2項に発散する項 $- \ln \Delta$ が出てきてしまう．これは「連続値を厳密に記録しようとすると無限のビット数が必要となる」ことが反映されている．
+   > This reflects the fact that to specify a continuous variable very precisely requires a large number of bits.
+3. この発散項は分布の形状に関係ないので無視してしまって，第1項の方だけを見ることにし，一応名前を変えて「微分エントロピー」として (1.103) のように定義しよう．
+4. 結局のところ，離散型のエントロピーの $\sum$ が自然に $\int$ に拡張されたことになった．
+
+<br>
+
+> [p53] In the case of discrete distributions, we saw that the maximum entropy con- figuration corresponded to an equal distribution of probabilities across the possible states of the variable. Let us now consider the maximum entropy configuration for a continuous variable.
+
+ここ以降の流れをまとめる．
+
+1. 離散型のときにエントロピーを最大にするのは，(とりうる値の数が同じなら) 一様分布だった．では，連続型分布についてはどうだろう？
+2. 条件を揃えるため「平均と分散同じ分布の中で」微分エントロピーを最大にするものを探すことにしよう．(1.106, 1.107 式)
+3. ラグランジュ乗数法と変分法を使って計算すると，微分エントロピーを最大にするのはガウス分布だということがわかる．(一様分布でなく！) (離散型のエントロピーをそっくりそのまま拡張できたわけではないことが起因している？)
+
+<br>
+
+(1.110) の結果から
+
+> [p54] Thus we see again that the entropy increases as the distribution becomes broader, i.e., as σ2 increases. 
+
+と言え，これもエントロピーの概念を押さえる上で直感的．
+
+<br>
+<br>
+
+## 1.6.1. Relative entropy and mutual information
+
+<br>
+
+KL ダイバージェンスについて，
+
+> [p57] Thus we can interpret the Kullback-Leibler divergence as a measure of the dissimilarity of the two distributions $p(x)$ and $q(x)$.
+
+すなわち「分布間の隔たりの尺度」としての解釈と，
+
+> [p57] If we use a distribution that is different from the true one, then we must necessarily have a less efficient coding, and on average the additional information that must be transmitted is (at least) equal to the Kullback-Leibler divergence between the two distributions.
+
+すなわち「符号化の際に追加で必要な情報量」としての解釈の２つ述べられている．
+
+それぞれについて，簡単にまとめる．
+
+<br>
+
+### 「分布間の隔たりの尺度」としての KL ダイバージェンス
+
+これは直感的だが，定義式 (1.113) を少し変形して
+
+$$
+\begin{aligned}
+KL(p||q) &= \int \left\{ -\ln q(x) - (-\ln p(x)) \right\} ~ p(x) ~ dx \\
+&= E_{p} [-\ln q(X) - (-\ln p(X))]
+\end{aligned}
+$$
+
+とすると，より分かりやすい．(ノーテーションは雑)
+
+$-\ln q(x) - (-\ln p(x))$ は実現値 $x$ における真の分布 $p$ とモデル分布 $q$ の隔たり(乖離度)みたいな意味．さらに，観測されやすい $x$ における乖離度を重視したい，という気持ちで，期待値 $E_p$ をとってる．
+
+また，↓の KL ダイバージェンスの性質からも「隔たり」という感じがして良い．
+- $KL(p||q) \ge 0$
+- 等号成立条件は $p(x) = q(x)$
+
+また，よくある注意点として，
+
+> [p55] Note that it is not a symmetrical quantity, that is to say $KL(p ||q) \neq KL(q||p)$.
+
+というのがあるが，これはそんなに不自然ではない．真の分布で期待値をとる(すなわち真の分布で見て発生確率が高い場所での隔たりを重視する)ので，$p()$ と $q()$ のどちらを真の分布と見てどちらをモデル分布と見るかによって隔たりの値が変わる．これはそうであって欲しいし，自然．
+
+<br>
+
+### 「符号化の際に追加で必要な情報量」としての KL ダイバージェンス
+
+こっちの解釈はちょっと理解足りていないが，イメージでまとめる．
+
+1. 真の分布 $p(x)$ が分かっていれば，最小平均符号長 (＝エントロピー＝$-\sum p(x) \ln p(x)$) を達成する符号化ルールを作れる．作り方としては，ある実現値 $x$ に長さ $-\ln p(x)$ の符号を割り当てるイメージ．
+2. ただ実際には，$p(x)$ は未知なので，モデル $q(x)$ で近似して，これをもとに符号化するしかない．ある実現値 $x$ に長さ $-\ln q(x)$ の符号を割り当てる，という符号化を行うとすると，平均符号長は $-\sum p(x) \ln q(x)$ となる．
+3. つまり結局，未知の真の分布 $p(x)$ をモデル $q(x)$ で近似して符号化してしまったせいで，追加で $-\sum p(x) \ln q(x) -\left( -\sum p(x) \ln p(x) \right)$ の平均符号長を使うハメになってしまっている．このことを指して↓のような記述があるんだと思う．（ちなみに和訳ではここの "specify" を "特定" と訳しているが，"明示" とか "表現" というニュアンスのが近い気がする．）
+   > [p55] If we use $q(x)$ to construct a coding scheme for the purpose of transmitting values of $x$ to a receiver, then the average additional amount of information (in nats) required to specify the value of $x$ (assuming we choose an efficient coding scheme) as a result of using q(x) instead of the true distribution $p(x)$ is given by KL divergence (1.113)
+
+<br>
+
+次に，KL ダイバージェンスと最尤法の関係について見ていく．(1.119) の近似を少し変形すると，
+
+$$
+\begin{aligned}
+KL(p||q) &= E_{X \sim p} [-\ln q(X | \theta) - (-\ln p(X))] \\
+&\approx \frac{1}{N} \sum_{n=1}^N [-\ln q(x_n | \theta) - (-\ln p(x_n))]
+\end{aligned}
+$$
+
+となるが，ここで近似 KL ダイバージェンスを最小にする $\theta$ を決める上では第2項は関係ないのでそれを無視して
+
+$$
+\begin{aligned}
+KL(p||q) &\propto E_{X \sim p} [-\ln q(X | \theta)] \\
+&\approx \frac{1}{N} \sum_{n=1}^N [-\ln q(x_n | \theta)]
+\end{aligned}
+$$
+
+の部分を考えると，確かに「近似 KL ダイバージェンスの最小化は対数尤度の最大化と等価」てのは言える．
+
+けれどもあくまで「KL ダイバージェンスの近似が妥当なとき」に限られる．やってることは期待値を標本平均で推定しているような感じなので，大体の場合問題ないが，**i.i.d. が崩れてしまうと**，色々とやばくなってしまう．
+
+<br>
+
+次に，相互情報量について．発想は自然で，流れとしては...
+
+1. $x, y$ が独立であることと $p(x, y) = p(x) p(y)$ は同値 (というか定義)
+2. よって「$x, y$ がどのくらい独立に近い(遠い)か」は「$p(x, y)$ に対する $p(x) p(y)$の近似精度」つまり「$p(x, y)$ と $p(x)p(y)$ の隔たり」で表せそう．
+3. これは $p(x,y)$ と $p(x)p(y)$の KL ダイバージェンス $KL(p(x,y)||p(x)p(y))$ で定量的に測れるね．
+4. これを $x$, $y$ の相互情報量 $I(x,y)$ と呼んで「独立からの遠さ」の指標として使おう．
+
 

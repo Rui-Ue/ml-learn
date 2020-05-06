@@ -17,3 +17,6 @@ my_dir/
 # cache of python
 __pycache__/
 
+# Notebook Checkpoints
+.ipynb_checkpoints/
+
